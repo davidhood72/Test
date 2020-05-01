@@ -1,0 +1,98 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "imageTemplateName": {
+        "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "svclocation": {
+            "type": "string"
+        }
+    },
+    
+    "variables": {
+    },
+
+
+    "resources": [
+      {
+        "name": "[parameters('imageTemplateName')]",
+        "type": "Microsoft.VirtualMachineImages/imageTemplates",
+        "apiVersion": "[parameters('api-version')]",
+        "location": "[parameters('svclocation')]",
+        "dependsOn": [],
+        "properties": {
+            "buildTimeoutInMinutes" : 100,
+        
+            "source": {
+                "type": "PlatformImage",
+                    "publisher": "microsoftwindowsdesktop",
+                    "offer": "office-365",
+                    "sku": "19h2-evd-o365pp",
+                    "version": "latest"
+                
+            },
+            "customize": [
+
+                    {
+                        "type": "PowerShell",
+                        "name": "CreateBuildPath",
+                        "scriptUri": "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/testPsScript.ps1"
+                    },
+					 {
+                        "type": "PowerShell",
+                        "name": "InstallFSLogixNP",
+                        "scriptUri": "https://raw.githubusercontent.com/davidhood72/Test/master/dhinstallfsnp.ps1"
+                    },
+                    {
+                        "type": "WindowsRestart",
+                        "restartCheckCommand": "echo Azure-Image-Builder-Restarted-the-VM  > c:\\buildArtifacts\\azureImageBuilderRestart.txt",
+                        "restartTimeout": "5m"
+                    },
+                    {
+                        "type": "File",
+                        "name": "downloadBuildArtifacts",
+                        "sourceUri": "https://raw.githubusercontent.com/danielsollondon/azvmimagebuilder/master/quickquickstarts/exampleArtifacts/buildArtifacts/index.html",
+                        "destination":"c:\\buildArtifacts\\index.html"
+                    },
+        
+                    {
+                        "type": "PowerShell",
+                        "name": "settingUpMgmtAgtPath",
+                        "inline": [
+                            "mkdir c:\\buildActions",
+                            "echo Azure-Image-Builder-Was-Here  > c:\\buildActions\\buildActionsOutput.txt"
+                        ]
+                        }
+
+            ],
+            "distribute": 
+            [
+                {   "type":"ManagedImage",
+                    "imageId": "/subscriptions/cb6aa3c6-be1b-4da2-8dd5-44e20e93a5c6/resourceGroups/DH-AIB/providers/Microsoft.Compute/images/<imageName>",
+                    "location": "westeurope",
+                    "runOutputName": "winclientR01",
+                    "artifactTags": {
+                        "source": "azVmImageBuilder",
+                        "baseosimg": "windows2019"
+                    }
+                }
+            ]
+            }
+        }
+
+    
+    ]
+}    
+
+
+
+
+
+
+
+
+
